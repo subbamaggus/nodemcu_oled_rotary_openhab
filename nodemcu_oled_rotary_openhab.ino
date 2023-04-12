@@ -26,6 +26,8 @@ AiEsp32RotaryEncoder rotaryEncoder = AiEsp32RotaryEncoder(ROTARY_ENCODER_A_PIN, 
 
 const char *host = "http://192.168.178.69:8080/rest/items";
 
+WiFiClient wifiClient;
+
 void connect_wifi() {
   IPAddress ip;
 
@@ -78,7 +80,7 @@ void get_data()
   Serial.print("Request Link:");
   Serial.println(host);
   
-  http.begin(WiFi, host);     //Specify request destination
+  http.begin(wifiClient, host);     //Specify request destination
   
   int httpCode = http.GET();            //Send the request
   String payload = http.getString();    //Get the response payload from server
@@ -88,8 +90,6 @@ void get_data()
 
   Serial.print("Returned data from Server:");
   Serial.println(payload);    //Print request response payload
-  
-
 
   http.end();  //Close connection
 }
