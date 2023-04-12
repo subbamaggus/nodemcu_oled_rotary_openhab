@@ -7,6 +7,7 @@
 #include <ArduinoJson.h>
 
 // my local config
+// git update-index --assume-unchanged config.h
 #include "config.h"
 
 // base version from:
