@@ -25,7 +25,8 @@
 //instead of changing here, rather change numbers above
 AiEsp32RotaryEncoder rotaryEncoder = AiEsp32RotaryEncoder(ROTARY_ENCODER_A_PIN, ROTARY_ENCODER_B_PIN, ROTARY_ENCODER_BUTTON_PIN, ROTARY_ENCODER_VCC_PIN, ROTARY_ENCODER_STEPS);
 
-const char *host = "http://192.168.178.69:8080/rest/items";
+//const char *host = "http://192.168.178.69:8080/rest/items";
+const char *host = "http://192.168.178.69:8080/rest/items/Local_Weather_and_Forecast_Cloudiness";
 
 WiFiClient wifiClient;
 
@@ -91,6 +92,22 @@ void get_data()
 
   Serial.print("Returned data from Server:");
   Serial.println(payload);    //Print request response payload
+
+  StaticJsonDocument<2000> doc;
+  DeserializationError error = deserializeJson(doc, payload);
+  if (error) {
+    Serial.print(F("deserializeJson() failed: "));
+    Serial.println(error.f_str());
+    return;
+  }
+
+
+  // Fetch values.
+  //
+  // Most of the time, you can rely on the implicit casts.
+  // In other case, you can do doc["time"].as<long>();
+  const char* item0 = doc["name"];
+  Serial.println(item0);
 
   http.end();  //Close connection
 }
