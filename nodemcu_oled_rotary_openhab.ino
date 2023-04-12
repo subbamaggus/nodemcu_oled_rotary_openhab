@@ -1,6 +1,14 @@
 #include "AiEsp32RotaryEncoder.h"
 #include "Arduino.h"
 
+#include <ESP8266WiFi.h>
+#include <WiFiClient.h> 
+#include <ESP8266HTTPClient.h>
+#include <ArduinoJson.h>
+
+// my local config
+#include "config.h"
+
 // base version from:
 // https://github.com/igorantolic/ai-esp32-rotary-encoder.git
 
@@ -15,6 +23,20 @@
 
 //instead of changing here, rather change numbers above
 AiEsp32RotaryEncoder rotaryEncoder = AiEsp32RotaryEncoder(ROTARY_ENCODER_A_PIN, ROTARY_ENCODER_B_PIN, ROTARY_ENCODER_BUTTON_PIN, ROTARY_ENCODER_VCC_PIN, ROTARY_ENCODER_STEPS);
+
+const char *host = "http://192.168.178.69:8080/rest/items";
+
+void connect_wifi() {
+  IPAddress ip;
+
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  ip = WiFi.localIP();
+  Serial.println(ip);
+}
 
 void rotary_onButtonClick()
 {
@@ -49,6 +71,29 @@ void IRAM_ATTR readEncoderISR()
 	rotaryEncoder.readEncoder_ISR();
 }
 
+void get_data() 
+{
+  HTTPClient http;    //Declare object of class HTTPClient
+
+  Serial.print("Request Link:");
+  Serial.println(host);
+  
+  http.begin(WiFi, host);     //Specify request destination
+  
+  int httpCode = http.GET();            //Send the request
+  String payload = http.getString();    //Get the response payload from server
+
+  Serial.print("Response Code:"); //200 is OK
+  Serial.println(httpCode);   //Print HTTP return code
+
+  Serial.print("Returned data from Server:");
+  Serial.println(payload);    //Print request response payload
+  
+
+
+  http.end();  //Close connection
+}
+
 void setup()
 {
 	Serial.begin(9600);
@@ -69,6 +114,10 @@ void setup()
    */
 	//rotaryEncoder.disableAcceleration(); //acceleration is now enabled by default - disable if you dont need it
 	rotaryEncoder.setAcceleration(250); //or set the value - larger number = more accelearation; 0 or 1 means disabled acceleration
+
+  connect_wifi();
+  
+  get_data();
 
   Serial.println("setup done");
 }
