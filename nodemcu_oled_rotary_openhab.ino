@@ -30,6 +30,7 @@
 #define SCREEN_HEIGHT 64
 #define Y_START_YELLOW 0
 #define Y_START_BLUE 17
+
 #define ITEMS_PER_PAGE 6
 
 //instead of changing here, rather change numbers above
@@ -114,13 +115,11 @@ void rotary_loop()
     {
       list_start = 0;
       selected_line = selected_item;
-      Serial.println("start of list");
     }
     if (selected_item >= (list_length - 3))
     {
       list_start = list_length - ITEMS_PER_PAGE;
       selected_line = selected_item - list_start;
-      Serial.println("End of list");
     }
   }
   if (rotaryEncoder.isEncoderButtonClicked())
@@ -228,8 +227,7 @@ void display_items()
 
   display.setCursor(0, Y_START_BLUE - 1);
 
-  //display.fillRect(0, 33, 128, 8, WHITE);
-  display.fillRect(0, Y_START_BLUE - 1 + selected_line * 8, 8, 8, WHITE);
+  display.fillRect(0, Y_START_BLUE - 1 + selected_line * 8, 128, 8, WHITE);
 
   for (int n = list_start; n < list_start + ITEMS_PER_PAGE; n++)
   {
@@ -238,14 +236,14 @@ void display_items()
 
     if(selected_item == n)
     {
-      //display.setTextColor(BLACK);
+      display.setTextColor(BLACK);
       url_current_item = item_link;
     } else
     {
-      //display.setTextColor(WHITE);
+      display.setTextColor(WHITE);
     }
 
-    display.print("  ");
+    display.print(" ");
     display.println(item);
   }
 
@@ -319,6 +317,4 @@ void loop()
   }
 
   rotary_loop();
-
-  //delay(50);
 }
