@@ -303,13 +303,13 @@ void setup()
 
 void loop()
 {
-  int timeSinceLastLoop = millis() - lastTimeLooped;
-  if (reload_url_time < timeSinceLastLoop)
+  if (1 == menu_level)
   {
-    lastTimeLooped = millis();
-
-    if (1 == menu_level)
+    int timeSinceLastLoop = millis() - lastTimeLooped;
+    if (reload_url_time < timeSinceLastLoop)
     {
+      lastTimeLooped = millis();
+
       connect_wifi();
       get_item_data(url_current_item);
       display_item_data();
