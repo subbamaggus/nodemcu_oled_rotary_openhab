@@ -279,6 +279,16 @@ void display_item_data()
 
 void setup()
 {
+  display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR);
+  display.setTextWrap(false);
+
+  display.clearDisplay();
+  display.setTextColor(WHITE);
+  display.setTextSize(2);
+  display.setCursor(15, 20);
+  display.println("starting");
+  display.display();
+
   Serial.begin(9600);
 
   connect_wifi();
@@ -289,9 +299,6 @@ void setup()
   rotaryEncoder.setup(readEncoderISR);
   rotaryEncoder.setBoundaries(0, 1000, circleValues);
   rotaryEncoder.setAcceleration(250);
-
-  display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR);
-  display.setTextWrap(false);
 
   Serial.println("setup done");
 }
