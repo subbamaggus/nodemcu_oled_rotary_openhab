@@ -114,18 +114,22 @@ void IRAM_ATTR readEncoderISR()
   rotaryEncoder.readEncoder_ISR();
 }
 
-void get_items()
+void get_items(String url)
 {
   HTTPClient http;
 
-  http.begin(wifiClient, url_host);
+  Serial.print("Request Link:");
+  Serial.println(url);
+
+  http.begin(wifiClient, url);
 
   int httpCode = 0;
   while(200 != httpCode)
   {
+    httpCode = http.GET();    
+
     Serial.print("http response code: ");
     Serial.println(httpCode);
-    http.GET();
   }
   String payload = http.getString();
 
@@ -155,14 +159,12 @@ void get_item_data(String url)
   int httpCode = 0;
   while(200 != httpCode)
   {
+    httpCode = http.GET();
+
     Serial.print("http response code: ");
     Serial.println(httpCode);
-    http.GET();
   }
   String payload = http.getString();
-
-  Serial.print("Response Code:");
-  Serial.println(httpCode);
 
   Serial.print("Returned data from Server:");
   Serial.println(payload);
@@ -251,7 +253,7 @@ void setup()
 
   connect_wifi();
 
-  get_items();
+  get_items(url_host);
 
   rotaryEncoder.begin();
   rotaryEncoder.setup(readEncoderISR);
