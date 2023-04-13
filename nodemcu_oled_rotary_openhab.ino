@@ -125,17 +125,19 @@ void get_items(String url)
   http.begin(wifiClient, url);
 
   int httpCode = 0;
-  while(200 != httpCode)
+  String payload = "";
+  while((200 != httpCode) || (payload == ""))
   {
-    httpCode = http.GET();    
+    httpCode = http.GET();
 
     Serial.print("http response code: ");
     Serial.println(httpCode);
-  }
-  String payload = http.getString();
 
-  Serial.print("Returned data from Server:");
-  Serial.println(payload);
+    payload = http.getString();
+
+    Serial.print("Returned data from Server:");
+    Serial.println(payload);
+  }
 
   DeserializationError error = deserializeJson(items, payload);
   if (error)
@@ -158,17 +160,19 @@ void get_item_data(String url)
   http.begin(wifiClient, url);
 
   int httpCode = 0;
-  while(200 != httpCode)
+  String payload = "";
+  while((200 != httpCode) || (payload == ""))
   {
     httpCode = http.GET();
 
     Serial.print("http response code: ");
     Serial.println(httpCode);
-  }
-  String payload = http.getString();
 
-  Serial.print("Returned data from Server:");
-  Serial.println(payload);
+    payload = http.getString();
+
+    Serial.print("Returned data from Server:");
+    Serial.println(payload);
+  }
 
   DeserializationError error = deserializeJson(item, payload);
   if (error)
