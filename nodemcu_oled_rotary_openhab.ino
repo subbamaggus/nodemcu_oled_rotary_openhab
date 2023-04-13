@@ -30,6 +30,7 @@
 #define SCREEN_HEIGHT 64
 #define Y_START_YELLOW 0
 #define Y_START_BLUE 17
+#define ITEMS_PER_PAGE 6
 
 //instead of changing here, rather change numbers above
 AiEsp32RotaryEncoder rotaryEncoder = AiEsp32RotaryEncoder(ROTARY_ENCODER_A_PIN, ROTARY_ENCODER_B_PIN, ROTARY_ENCODER_BUTTON_PIN, ROTARY_ENCODER_VCC_PIN, ROTARY_ENCODER_STEPS);
@@ -46,8 +47,11 @@ String url_current_item = "";
 
 uint16_t reload_url_time = 10000;
 uint8_t menu_level = 0;
+
 uint8_t selected_item = 0;
+uint8_t selected_line = 0;
 uint8_t list_start = 0;
+uint8_t list_length = 0;
 
 DynamicJsonDocument items(20480);
 DynamicJsonDocument item(20480);
@@ -102,7 +106,22 @@ void rotary_loop()
   {
     Serial.print("Value: ");
     Serial.println(rotaryEncoder.readEncoder());
+
     selected_item = rotaryEncoder.readEncoder();
+    list_start = selected_item - 2;
+    selected_line = 2;
+    if (selected_item < 2)
+    {
+      list_start = 0;
+      selected_line = selected_item;
+      Serial.println("start of list");
+    }
+    if (selected_item >= (list_length - 3))
+    {
+      list_start = list_length - ITEMS_PER_PAGE;
+      selected_line = selected_item - list_start;
+      Serial.println("End of list");
+    }
   }
   if (rotaryEncoder.isEncoderButtonClicked())
   {
@@ -140,13 +159,24 @@ void get_items(String url)
   }
 
   DeserializationError error = deserializeJson(items, payload);
+  list_length = items.size();
+
+  for (int n = 0; n < list_length; n++)
+  {
+    const char* item = items[n]["label"];
+
+    Serial.print(n);
+    Serial.print(") ");
+    Serial.println(item);
+  }
+
   if (error)
   {
     Serial.print(F("deserializeJson() failed: "));
     Serial.println(error.f_str());
     return;
   }
-
+  
   http.end();
 }
 
@@ -187,11 +217,7 @@ void get_item_data(String url)
 
 void display_items()
 {
-
-  int local_doc_size = items.size();
-
-  Serial.println(local_doc_size);
-  rotaryEncoder.setBoundaries(0, local_doc_size, circleValues);
+  rotaryEncoder.setBoundaries(0, list_length - 1, circleValues);
 
   display.clearDisplay();
   display.setTextColor(WHITE);
@@ -200,25 +226,26 @@ void display_items()
   display.setCursor(5, 1);
   display.println("openhab");
 
-  display.setCursor(0, 17);
+  display.setCursor(0, Y_START_BLUE - 1);
 
-  display.fillRect(0, 33, 128, 8, WHITE);
+  //display.fillRect(0, 33, 128, 8, WHITE);
+  display.fillRect(0, Y_START_BLUE - 1 + selected_line * 8, 8, 8, WHITE);
 
-  for (int n = list_start; n <= list_start + 5; n++)
+  for (int n = list_start; n < list_start + ITEMS_PER_PAGE; n++)
   {
     const char* item = items[n]["label"];
     const char* item_link = items[n]["link"];
 
     if(selected_item == n)
     {
-      display.setTextColor(BLACK);
+      //display.setTextColor(BLACK);
       url_current_item = item_link;
     } else
     {
-      display.setTextColor(WHITE);
+      //display.setTextColor(WHITE);
     }
 
-    Serial.println(item_link);
+    display.print("  ");
     display.println(item);
   }
 
@@ -293,5 +320,5 @@ void loop()
 
   rotary_loop();
 
-  delay(50);
+  //delay(50);
 }
