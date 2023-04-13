@@ -54,8 +54,8 @@ uint8_t selected_line = 0;
 uint8_t list_start = 0;
 uint8_t list_length = 0;
 
-DynamicJsonDocument items(20480);
-DynamicJsonDocument item(20480);
+DynamicJsonDocument items(30000);
+DynamicJsonDocument item(10000);
 
 
 void connect_wifi()
