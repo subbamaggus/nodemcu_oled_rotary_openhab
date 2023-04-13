@@ -37,13 +37,17 @@
 AiEsp32RotaryEncoder rotaryEncoder = AiEsp32RotaryEncoder(ROTARY_ENCODER_A_PIN, ROTARY_ENCODER_B_PIN, ROTARY_ENCODER_BUTTON_PIN, ROTARY_ENCODER_VCC_PIN, ROTARY_ENCODER_STEPS);
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT);
 
-//const char *host = "http://192.168.178.69:8080/rest/items";
-const char * host = "http://192.168.178.69:8080/rest/items/Shelly25_2_P";
-uint16_t reload_url_time = 2000;
+const char *host = "http://192.168.178.69:8080/rest/items";
+//const char * host = "http://192.168.178.69:8080/rest/items/Shelly25_2_P";
+String current_item_url = "";
+
+uint16_t reload_url_time = 10000;
 uint8_t menu_level = 0;
+uint8_t selected_item = 2;
 
 WiFiClient wifiClient;
 static unsigned long lastTimeLooped = 0;
+bool circleValues = false;
 
 void connect_wifi() {
   IPAddress ip;
@@ -85,6 +89,7 @@ void rotary_loop()
 	{
 		Serial.print("Value: ");
 		Serial.println(rotaryEncoder.readEncoder());
+    selected_item = rotaryEncoder.readEncoder();
 	}
 	if (rotaryEncoder.isEncoderButtonClicked())
 	{
@@ -109,7 +114,7 @@ void get_items()
   Serial.print("Returned data from Server:");
   Serial.println(payload);    //Print request response payload
 
-  StaticJsonDocument<2000> doc;
+  DynamicJsonDocument doc(20480);
   DeserializationError error = deserializeJson(doc, payload);
   if (error) {
     Serial.print(F("deserializeJson() failed: "));
@@ -117,11 +122,10 @@ void get_items()
     return;
   }
 
-  const char* item = doc["name"];
-  const char* state = doc["state"];
-  Serial.print(item);
-  Serial.print(":");
-  Serial.println(state);
+  int local_doc_size = doc.size();
+
+  Serial.println(local_doc_size);
+  rotaryEncoder.setBoundaries(0, local_doc_size, circleValues);
 
   display.clearDisplay();
   display.setTextColor(WHITE);
@@ -130,19 +134,39 @@ void get_items()
   display.setCursor(5, 1);
   display.println("openhab");
 
+  display.setCursor(0, 17);
+
+  // second line
+  display.fillRect(0, 33, 128, 8, WHITE);
+
+  for (int n=selected_item-2; n <= selected_item+2; n++) {
+    const char* item = doc[n]["label"];
+    const char* item_link = doc[n]["link"];
+
+    display.setTextColor(WHITE);
+    if(selected_item == n) {
+      display.setTextColor(BLACK);
+      current_item_url = item_link;
+    }
+    Serial.println(item_link);
+    display.println(item);
+  }
+
   display.display();
+  
+  doc.clear();
 
   http.end();  //Close connection
 }
 
-void get_item_data(const char * host) 
+void get_item_data(String url) 
 {
   HTTPClient http;    //Declare object of class HTTPClient
 
   Serial.print("Request Link:");
-  Serial.println(host);
+  Serial.println(url);
   
-  http.begin(wifiClient, host);     //Specify request destination
+  http.begin(wifiClient, url);     //Specify request destination
   
   int httpCode = http.GET();            //Send the request
   String payload = http.getString();    //Get the response payload from server
@@ -200,7 +224,7 @@ void setup()
 	rotaryEncoder.setup(readEncoderISR);
 	//set boundaries and if values should cycle or not
 	//in this example we will set possible values between 0 and 1000;
-	bool circleValues = false;
+	
 	rotaryEncoder.setBoundaries(0, 1000, circleValues); //minValue, maxValue, circleValues true|false (when max go to min and vice versa)
 
 	/*Rotary acceleration introduced 25.2.2021.
@@ -215,6 +239,7 @@ void setup()
   connect_wifi();
   
   display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR);
+  display.setTextWrap(false);
 
   Serial.println("setup done");
 }
@@ -226,7 +251,7 @@ void loop()
 	{
     lastTimeLooped = millis();
     if (1 == menu_level) {
-		  get_item_data(host);
+		  get_item_data(current_item_url);
     } else {
       get_items();
     }
