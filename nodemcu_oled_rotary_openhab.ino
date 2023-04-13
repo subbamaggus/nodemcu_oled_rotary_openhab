@@ -111,15 +111,15 @@ void rotary_loop()
     selected_item = rotaryEncoder.readEncoder();
     list_start = selected_item - 2;
     selected_line = 2;
-    if (selected_item < 2)
-    {
-      list_start = 0;
-      selected_line = selected_item;
-    }
-    if (selected_item >= (list_length - 3))
+    if (selected_item >= list_length - 3)
     {
       list_start = list_length - ITEMS_PER_PAGE;
       selected_line = selected_item - list_start;
+    }
+    if ((selected_item < 2) || (list_length <= ITEMS_PER_PAGE))
+    {
+      list_start = 0;
+      selected_line = selected_item;
     }
   }
   if (rotaryEncoder.isEncoderButtonClicked())
@@ -173,7 +173,6 @@ void get_items(String url)
   {
     Serial.print(F("deserializeJson() failed: "));
     Serial.println(error.f_str());
-    return;
   }
   
   http.end();
@@ -208,7 +207,6 @@ void get_item_data(String url)
   {
     Serial.print(F("deserializeJson() failed: "));
     Serial.println(error.f_str());
-    return;
   }
 
   http.end();
