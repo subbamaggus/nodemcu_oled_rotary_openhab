@@ -1,14 +1,16 @@
-#include "AiEsp32RotaryEncoder.h"
 #include "Arduino.h"
 
-#include <ESP8266WiFi.h>
-#include <WiFiClient.h> 
-#include <ESP8266HTTPClient.h>
-#include <ArduinoJson.h>
+#include "AiEsp32RotaryEncoder.h"
 
 #include <SPI.h>
 #include <Wire.h>
 #include <Adafruit_SSD1306.h>
+
+#include <ESP8266WiFi.h>
+#include <WiFiClient.h> 
+#include <ESP8266HTTPClient.h>
+
+#include <ArduinoJson.h>
 
 // my local config
 // git update-index --assume-unchanged config.h
@@ -20,16 +22,12 @@
 #define ROTARY_ENCODER_A_PIN 12
 #define ROTARY_ENCODER_B_PIN 14
 #define ROTARY_ENCODER_BUTTON_PIN 13
-
-#define ROTARY_ENCODER_VCC_PIN -1 /* 27 put -1 of Rotary encoder Vcc is connected directly to 3,3V; else you can use declared output pin for powering rotary encoder */
-
-//depending on your encoder - try 1,2 or 4 to get expected behaviour
+#define ROTARY_ENCODER_VCC_PIN -1
 #define ROTARY_ENCODER_STEPS 4
 
 #define OLED_ADDR 0x3C
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
-
 #define Y_START_YELLOW 0
 #define Y_START_BLUE 17
 
@@ -37,35 +35,43 @@
 AiEsp32RotaryEncoder rotaryEncoder = AiEsp32RotaryEncoder(ROTARY_ENCODER_A_PIN, ROTARY_ENCODER_B_PIN, ROTARY_ENCODER_BUTTON_PIN, ROTARY_ENCODER_VCC_PIN, ROTARY_ENCODER_STEPS);
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT);
 
-const char *host = "http://192.168.178.69:8080/rest/items";
-//const char * host = "http://192.168.178.69:8080/rest/items/Shelly25_2_P";
-String current_item_url = "";
+static unsigned long lastTimePressed = 0;
+
+static unsigned long lastTimeLooped = 0;
+bool circleValues = false;
+
+WiFiClient wifiClient;
+const char *url_host = "http://192.168.178.69:8080/rest/items";
+String url_current_item = "";
 
 uint16_t reload_url_time = 10000;
 uint8_t menu_level = 0;
 uint8_t selected_item = 2;
 
-WiFiClient wifiClient;
-static unsigned long lastTimeLooped = 0;
-bool circleValues = false;
+DynamicJsonDocument items(20480);
+DynamicJsonDocument item(20480);
+
 
 void connect_wifi() {
   IPAddress ip;
 
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
+  if (WiFi.status() != WL_CONNECTED) {
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED) {
+      delay(500);
+      Serial.print(".");
+    }
+    ip = WiFi.localIP();
+    delay(5000);
+    Serial.println(ip);
   }
-  ip = WiFi.localIP();
-  Serial.println(ip);
 }
 
 void rotary_onButtonClick()
 {
-	static unsigned long lastTimePressed = 0;
-	//ignore multiple press in that time milliseconds
-	if (millis() - lastTimePressed < 500)
+  int timeSinceLastPress = millis() - lastTimePressed;
+
+	if (timeSinceLastPress < 500)
 	{
 		return;
 	}
@@ -84,7 +90,6 @@ void rotary_onButtonClick()
 
 void rotary_loop()
 {
-	//dont print anything unless value changed
 	if (rotaryEncoder.encoderChanged())
 	{
 		Serial.print("Value: ");
@@ -104,25 +109,30 @@ void IRAM_ATTR readEncoderISR()
 
 void get_items() 
 {
-  HTTPClient http;    //Declare object of class HTTPClient
+  HTTPClient http; 
 
-  http.begin(wifiClient, host);     //Specify request destination
+  http.begin(wifiClient, url_host);   
   
-  int httpCode = http.GET();            //Send the request
-  String payload = http.getString();    //Get the response payload from server
+  int httpCode = http.GET();          
+  String payload = http.getString();  
 
   Serial.print("Returned data from Server:");
-  Serial.println(payload);    //Print request response payload
+  Serial.println(payload);   
 
-  DynamicJsonDocument doc(20480);
-  DeserializationError error = deserializeJson(doc, payload);
+  DeserializationError error = deserializeJson(items, payload);
   if (error) {
     Serial.print(F("deserializeJson() failed: "));
     Serial.println(error.f_str());
     return;
   }
+  
+  http.end(); 
+}
 
-  int local_doc_size = doc.size();
+void display_items() 
+{
+
+  int local_doc_size = items.size();
 
   Serial.println(local_doc_size);
   rotaryEncoder.setBoundaries(0, local_doc_size, circleValues);
@@ -136,64 +146,61 @@ void get_items()
 
   display.setCursor(0, 17);
 
-  // second line
+  // mark second line
   display.fillRect(0, 33, 128, 8, WHITE);
 
   for (int n=selected_item-2; n <= selected_item+2; n++) {
-    const char* item = doc[n]["label"];
-    const char* item_link = doc[n]["link"];
+    const char* item = items[n]["label"];
+    const char* item_link = items[n]["link"];
 
     display.setTextColor(WHITE);
     if(selected_item == n) {
       display.setTextColor(BLACK);
-      current_item_url = item_link;
+      url_current_item = item_link;
     }
     Serial.println(item_link);
     display.println(item);
   }
 
   display.display();
-  
-  doc.clear();
-
-  http.end();  //Close connection
 }
 
 void get_item_data(String url) 
 {
-  HTTPClient http;    //Declare object of class HTTPClient
+  HTTPClient http;  
 
   Serial.print("Request Link:");
   Serial.println(url);
   
-  http.begin(wifiClient, url);     //Specify request destination
+  http.begin(wifiClient, url);
   
-  int httpCode = http.GET();            //Send the request
-  String payload = http.getString();    //Get the response payload from server
+  int httpCode = http.GET();
+  String payload = http.getString(); 
 
-  Serial.print("Response Code:"); //200 is OK
-  Serial.println(httpCode);   //Print HTTP return code
+  Serial.print("Response Code:");
+  Serial.println(httpCode);  
 
   Serial.print("Returned data from Server:");
-  Serial.println(payload);    //Print request response payload
+  Serial.println(payload);   
 
-  StaticJsonDocument<2000> doc;
-  DeserializationError error = deserializeJson(doc, payload);
+  DeserializationError error = deserializeJson(item, payload);
   if (error) {
     Serial.print(F("deserializeJson() failed: "));
     Serial.println(error.f_str());
     return;
   }
 
-  // Fetch values.
-  //
-  // Most of the time, you can rely on the implicit casts.
-  // In other case, you can do doc["time"].as<long>();
-  const char* item = doc["name"];
-  const char* state = doc["state"];
-  Serial.print(item);
+  http.end(); 
+}
+
+void display_item_data() 
+{
+  const char* local_item = item["name"];
+  const char* local_state = item["state"];
+
+  Serial.print(local_item);
   Serial.print(":");
-  Serial.println(state);
+  Serial.println(local_state);
 
   display.clearDisplay();
   display.setTextColor(WHITE);
@@ -204,43 +211,31 @@ void get_item_data(String url)
 
   display.setTextSize(3);
   display.setCursor(15, 20);
-  display.println(state);
+  display.println(local_state);
 
   display.setTextSize(1);
   display.setCursor(2, 55);
-  display.println(item);
+  display.println(local_item);
 
   display.display();
-
-  http.end();  //Close connection
 }
 
 void setup()
 {
 	Serial.begin(9600);
 
-	//we must initialize rotary encoder
-	rotaryEncoder.begin();
-	rotaryEncoder.setup(readEncoderISR);
-	//set boundaries and if values should cycle or not
-	//in this example we will set possible values between 0 and 1000;
-	
-	rotaryEncoder.setBoundaries(0, 1000, circleValues); //minValue, maxValue, circleValues true|false (when max go to min and vice versa)
-
-	/*Rotary acceleration introduced 25.2.2021.
-   * in case range to select is huge, for example - select a value between 0 and 1000 and we want 785
-   * without accelerateion you need long time to get to that number
-   * Using acceleration, faster you turn, faster will the value raise.
-   * For fine tuning slow down.
-   */
-	//rotaryEncoder.disableAcceleration(); //acceleration is now enabled by default - disable if you dont need it
-	rotaryEncoder.setAcceleration(250); //or set the value - larger number = more accelearation; 0 or 1 means disabled acceleration
-
   connect_wifi();
   
+  get_items();
+
+	rotaryEncoder.begin();
+	rotaryEncoder.setup(readEncoderISR);
+	rotaryEncoder.setBoundaries(0, 1000, circleValues); 
+	rotaryEncoder.setAcceleration(250); 
+
   display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR);
   display.setTextWrap(false);
-
+  
   Serial.println("setup done");
 }
 
@@ -250,14 +245,19 @@ void loop()
 	if (reload_url_time < timeSinceLastLoop)
 	{
     lastTimeLooped = millis();
+
     if (1 == menu_level) {
-		  get_item_data(current_item_url);
-    } else {
-      get_items();
+      connect_wifi();
+      get_item_data(url_current_item);
+      display_item_data();
     }
 	}
 
-	//in loop call your custom function which will process rotary encoder values
+  if (0 == menu_level) {
+    display_items();
+  }
+
 	rotary_loop();
-	delay(50); //or do whatever you need to do...
+
+  delay(50);
 }
