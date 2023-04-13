@@ -174,7 +174,7 @@ void get_items(String url)
     Serial.print(F("deserializeJson() failed: "));
     Serial.println(error.f_str());
   }
-  
+
   http.end();
 }
 
@@ -182,7 +182,7 @@ void get_item_data(String url)
 {
   HTTPClient http;
 
-  Serial.print("Request Link:");
+  Serial.print("Request Link: ");
   Serial.println(url);
 
   http.begin(wifiClient, url);
