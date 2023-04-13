@@ -40,6 +40,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT);
 //const char *host = "http://192.168.178.69:8080/rest/items";
 const char * host = "http://192.168.178.69:8080/rest/items/Shelly25_2_P";
 uint16_t reload_url_time = 2000;
+uint8_t menu_level = 0;
 
 WiFiClient wifiClient;
 static unsigned long lastTimeLooped = 0;
@@ -68,6 +69,13 @@ void rotary_onButtonClick()
 	Serial.print("button pressed ");
 	Serial.print(millis());
 	Serial.println(" milliseconds after restart");
+
+  if(0 == menu_level)
+    menu_level = 1;
+  else
+    menu_level = 0;
+
+  lastTimeLooped = 0;
 }
 
 void rotary_loop()
@@ -87,6 +95,44 @@ void rotary_loop()
 void IRAM_ATTR readEncoderISR()
 {
 	rotaryEncoder.readEncoder_ISR();
+}
+
+void get_items() 
+{
+  HTTPClient http;    //Declare object of class HTTPClient
+
+  http.begin(wifiClient, host);     //Specify request destination
+  
+  int httpCode = http.GET();            //Send the request
+  String payload = http.getString();    //Get the response payload from server
+
+  Serial.print("Returned data from Server:");
+  Serial.println(payload);    //Print request response payload
+
+  StaticJsonDocument<2000> doc;
+  DeserializationError error = deserializeJson(doc, payload);
+  if (error) {
+    Serial.print(F("deserializeJson() failed: "));
+    Serial.println(error.f_str());
+    return;
+  }
+
+  const char* item = doc["name"];
+  const char* state = doc["state"];
+  Serial.print(item);
+  Serial.print(":");
+  Serial.println(state);
+
+  display.clearDisplay();
+  display.setTextColor(WHITE);
+
+  display.setTextSize(1);
+  display.setCursor(5, 1);
+  display.println("openhab");
+
+  display.display();
+
+  http.end();  //Close connection
 }
 
 void get_item_data(const char * host) 
@@ -179,7 +225,11 @@ void loop()
 	if (reload_url_time < timeSinceLastLoop)
 	{
     lastTimeLooped = millis();
-		get_item_data(host);
+    if (1 == menu_level) {
+		  get_item_data(host);
+    } else {
+      get_items();
+    }
 	}
 
 	//in loop call your custom function which will process rotary encoder values
