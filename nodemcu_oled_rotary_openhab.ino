@@ -6,6 +6,10 @@
 #include <ESP8266HTTPClient.h>
 #include <ArduinoJson.h>
 
+#include <SPI.h>
+#include <Wire.h>
+#include <Adafruit_SSD1306.h>
+
 // my local config
 // git update-index --assume-unchanged config.h
 #include "config.h"
@@ -22,13 +26,23 @@
 //depending on your encoder - try 1,2 or 4 to get expected behaviour
 #define ROTARY_ENCODER_STEPS 4
 
+#define OLED_ADDR 0x3C
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+
+#define Y_START_YELLOW 0
+#define Y_START_BLUE 17
+
 //instead of changing here, rather change numbers above
 AiEsp32RotaryEncoder rotaryEncoder = AiEsp32RotaryEncoder(ROTARY_ENCODER_A_PIN, ROTARY_ENCODER_B_PIN, ROTARY_ENCODER_BUTTON_PIN, ROTARY_ENCODER_VCC_PIN, ROTARY_ENCODER_STEPS);
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT);
 
 //const char *host = "http://192.168.178.69:8080/rest/items";
-const char *host = "http://192.168.178.69:8080/rest/items/Local_Weather_and_Forecast_Cloudiness";
+const char * host = "http://192.168.178.69:8080/rest/items/Shelly25_2_P";
+uint16_t reload_url_time = 2000;
 
 WiFiClient wifiClient;
+static unsigned long lastTimeLooped = 0;
 
 void connect_wifi() {
   IPAddress ip;
@@ -75,7 +89,7 @@ void IRAM_ATTR readEncoderISR()
 	rotaryEncoder.readEncoder_ISR();
 }
 
-void get_data() 
+void get_item_data(const char * host) 
 {
   HTTPClient http;    //Declare object of class HTTPClient
 
@@ -101,13 +115,32 @@ void get_data()
     return;
   }
 
-
   // Fetch values.
   //
   // Most of the time, you can rely on the implicit casts.
   // In other case, you can do doc["time"].as<long>();
-  const char* item0 = doc["name"];
-  Serial.println(item0);
+  const char* item = doc["name"];
+  const char* state = doc["state"];
+  Serial.print(item);
+  Serial.print(":");
+  Serial.println(state);
+
+  display.clearDisplay();
+  display.setTextColor(WHITE);
+
+  display.setTextSize(1);
+  display.setCursor(5, 1);
+  display.println("openhab > item");
+
+  display.setTextSize(3);
+  display.setCursor(15, 20);
+  display.println(state);
+
+  display.setTextSize(1);
+  display.setCursor(2, 55);
+  display.println(item);
+
+  display.display();
 
   http.end();  //Close connection
 }
@@ -135,13 +168,20 @@ void setup()
 
   connect_wifi();
   
-  get_data();
+  display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR);
 
   Serial.println("setup done");
 }
 
 void loop()
 {
+  int timeSinceLastLoop = millis() - lastTimeLooped;
+	if (reload_url_time < timeSinceLastLoop)
+	{
+    lastTimeLooped = millis();
+		get_item_data(host);
+	}
+
 	//in loop call your custom function which will process rotary encoder values
 	rotary_loop();
 	delay(50); //or do whatever you need to do...
