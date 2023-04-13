@@ -46,7 +46,8 @@ String url_current_item = "";
 
 uint16_t reload_url_time = 10000;
 uint8_t menu_level = 0;
-uint8_t selected_item = 2;
+uint8_t selected_item = 0;
+uint8_t list_start = 0;
 
 DynamicJsonDocument items(20480);
 DynamicJsonDocument item(20480);
@@ -199,7 +200,7 @@ void display_items()
 
   display.fillRect(0, 33, 128, 8, WHITE);
 
-  for (int n=selected_item-2; n <= selected_item+2; n++)
+  for (int n = list_start; n <= list_start + 5; n++)
   {
     const char* item = items[n]["label"];
     const char* item_link = items[n]["link"];
