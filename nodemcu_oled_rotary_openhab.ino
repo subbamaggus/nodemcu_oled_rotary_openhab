@@ -118,7 +118,7 @@ void get_items(String url)
 {
   HTTPClient http;
 
-  Serial.print("Request Link:");
+  Serial.print("Request Link: ");
   Serial.println(url);
 
   http.begin(wifiClient, url);
