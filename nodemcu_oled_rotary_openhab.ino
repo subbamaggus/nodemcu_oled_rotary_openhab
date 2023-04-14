@@ -309,16 +309,16 @@ void setup()
   display.setCursor(15, 17);
   display.println("starting");
   display.display();
-  draw(20);
+  draw(10);
 
   Serial.begin(9600);
-  draw(40);
+  draw(30);
 
   connect_wifi();
   draw(60);
 
   get_items(url_host);
-  draw(80);
+  draw(90);
 
   rotaryEncoder.begin();
   rotaryEncoder.setup(readEncoderISR);
