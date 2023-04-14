@@ -30,6 +30,8 @@
 #define SCREEN_HEIGHT 64
 #define Y_START_YELLOW 0
 #define Y_START_BLUE 17
+#define ARROW_WIDTH 6
+#define ARROW_HEIGHT 6
 
 #define ITEMS_PER_PAGE 6
 
@@ -282,6 +284,15 @@ void display_items()
 
     display.print(" ");
     display.println(item);
+  }
+
+  if(0 < list_start)
+  {
+    display.fillTriangle(SCREEN_WIDTH - ARROW_WIDTH - 2, Y_START_BLUE  + 5, SCREEN_WIDTH - 2, Y_START_BLUE  + 5, SCREEN_WIDTH - ARROW_WIDTH/2 - 2, Y_START_BLUE, WHITE);    
+  }
+  if(list_start + ITEMS_PER_PAGE < list_length)
+  {
+    display.fillTriangle(SCREEN_WIDTH - ARROW_WIDTH - 2, SCREEN_HEIGHT - 7, SCREEN_WIDTH - 2, SCREEN_HEIGHT - 7, SCREEN_WIDTH - ARROW_WIDTH/2 - 2, SCREEN_HEIGHT - 3, WHITE);
   }
 
   display.display();
