@@ -28,10 +28,12 @@
 #define OLED_ADDR 0x3C
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
+
 #define Y_START_YELLOW 0
-#define Y_START_BLUE 17
+#define Y_START_BLUE 16
 #define ARROW_WIDTH 6
 #define ARROW_HEIGHT 6
+#define LINE_WIDTH 10
 
 #define ITEMS_PER_PAGE 6
 
@@ -170,7 +172,7 @@ void get_items(String url)
 {
   HTTPClient http;
   uint8_t mypercent = 60;
-  
+
   Serial.print("Request Link: ");
   Serial.println(url);
 
@@ -264,9 +266,9 @@ void display_items()
   display.setCursor(5, 1);
   display.println("openhab");
 
-  display.setCursor(0, Y_START_BLUE - 1);
+  display.setCursor(0, Y_START_BLUE);
 
-  display.fillRect(0, Y_START_BLUE - 1 + selected_line * 8, 128, 8, WHITE);
+  display.fillRect(0, Y_START_BLUE + selected_line * 8, 128, 8, WHITE);
 
   for (int n = list_start; n < list_start + ITEMS_PER_PAGE; n++)
   {
@@ -288,11 +290,13 @@ void display_items()
 
   if(0 < list_start)
   {
-    display.fillTriangle(SCREEN_WIDTH - ARROW_WIDTH - 2, Y_START_BLUE  + 5, SCREEN_WIDTH - 2, Y_START_BLUE  + 5, SCREEN_WIDTH - ARROW_WIDTH/2 - 2, Y_START_BLUE, WHITE);    
+    //display.fillTriangle(SCREEN_WIDTH - ARROW_WIDTH - 2, Y_START_BLUE  + 6, SCREEN_WIDTH - 2, Y_START_BLUE  + 6, SCREEN_WIDTH - ARROW_WIDTH/2 - 2, Y_START_BLUE + 1, WHITE);
+    display.drawFastHLine(SCREEN_WIDTH/2 - LINE_WIDTH, Y_START_BLUE, LINE_WIDTH * 2, WHITE);
   }
   if(list_start + ITEMS_PER_PAGE < list_length)
   {
-    display.fillTriangle(SCREEN_WIDTH - ARROW_WIDTH - 2, SCREEN_HEIGHT - 7, SCREEN_WIDTH - 2, SCREEN_HEIGHT - 7, SCREEN_WIDTH - ARROW_WIDTH/2 - 2, SCREEN_HEIGHT - 3, WHITE);
+    //display.fillTriangle(SCREEN_WIDTH - ARROW_WIDTH - 2, SCREEN_HEIGHT - 7, SCREEN_WIDTH - 2, SCREEN_HEIGHT - 7, SCREEN_WIDTH - ARROW_WIDTH/2 - 2, SCREEN_HEIGHT - 3, WHITE);
+    display.drawFastHLine(SCREEN_WIDTH/2 - LINE_WIDTH, SCREEN_HEIGHT - 1, LINE_WIDTH * 2, WHITE);
   }
 
   display.display();
