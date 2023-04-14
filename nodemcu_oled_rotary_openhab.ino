@@ -57,10 +57,22 @@ uint8_t list_length = 0;
 DynamicJsonDocument items(30000);
 DynamicJsonDocument item(10000);
 
+uint8_t _position_x = 10;
+uint8_t _position_y = 40;
+uint8_t _width = 100;
+uint8_t _height = 10;
+void draw(uint8_t percent){
+  uint8_t percent_x = _width * percent / 100;
+
+  display.fillRect(_position_x, _position_y, percent_x, _height, WHITE);
+  display.drawRect(_position_x, _position_y, _width, _height, WHITE);
+  display.display();
+}
 
 void connect_wifi()
 {
   IPAddress ip;
+  uint8_t mypercent = 40;
 
   if (WiFi.status() != WL_CONNECTED)
   {
@@ -70,6 +82,9 @@ void connect_wifi()
     {
       delay(500);
       Serial.print(".");
+
+      mypercent = mypercent + 2;
+      draw(mypercent);
     }
     ip = WiFi.localIP();
     Serial.println(ip);
@@ -136,7 +151,8 @@ void IRAM_ATTR readEncoderISR()
 void get_items(String url)
 {
   HTTPClient http;
-
+  uint8_t mypercent = 60;
+  
   Serial.print("Request Link: ");
   Serial.println(url);
 
@@ -155,6 +171,13 @@ void get_items(String url)
 
     Serial.print("Returned data from Server:");
     Serial.println(payload);
+
+    mypercent++;
+    draw(mypercent);
+    if(80 < mypercent)
+    {
+      mypercent = 75;
+    }
   }
 
   DeserializationError error = deserializeJson(items, payload);
@@ -283,20 +306,25 @@ void setup()
   display.clearDisplay();
   display.setTextColor(WHITE);
   display.setTextSize(2);
-  display.setCursor(15, 20);
+  display.setCursor(15, 17);
   display.println("starting");
   display.display();
+  draw(20);
 
   Serial.begin(9600);
+  draw(40);
 
   connect_wifi();
+  draw(60);
 
   get_items(url_host);
+  draw(80);
 
   rotaryEncoder.begin();
   rotaryEncoder.setup(readEncoderISR);
   rotaryEncoder.setBoundaries(0, 1000, circleValues);
   rotaryEncoder.setAcceleration(250);
+  draw(100);
 
   Serial.println("setup done");
 }
