@@ -1,7 +1,7 @@
 # nodemcu_oled_rotary_openhab
 
-
 ## setup
+
 hardware used:
 - NodeMCU V3
 - Adafruit SSD1306 128x64 OLED
@@ -14,6 +14,11 @@ use NodeMCU to read "items" from openhab instance
 with rotary encoder go through items
 with button select item
 all info shown on screen/display
+
+### restrictions
+
+items are only read at start up
+items are sometimes not completely read
 
 ## wiring
 
@@ -45,5 +50,7 @@ https://github.com/igorantolic/ai-esp32-rotary-encoder.git
 
 ## picture of the running setup
 
+![Breadboard](https://github.com/subbamaggus/nodemcu_oled_rotary_openhab/blob/main/splash.jpeg?raw=true)
 ![Breadboard](https://github.com/subbamaggus/nodemcu_oled_rotary_openhab/blob/main/menu_all-items.jpeg?raw=true)
 ![Breadboard](https://github.com/subbamaggus/nodemcu_oled_rotary_openhab/blob/main/menu_single-item.jpeg?raw=true)
+
